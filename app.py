@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from translate import Translator
+import translators as ts
 import logging
 import os
 
@@ -27,8 +27,12 @@ def traduzir_texto():
         if not texto_original.strip():
             return jsonify({"texto_traduzido": ""}), 200
 
-        translator = Translator(to_lang=idioma_destino)
-        texto_traduzido = translator.translate(texto_original)  
+        texto_traduzido = ts.translate_text(
+            query_text=texto_original,
+            translator='google',
+            from_language='auto',
+            to_language=idioma_destino
+        )  
         return jsonify({
             "texto_traduzido": texto_traduzido
         }), 200

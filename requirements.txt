@@ -1,0 +1,4 @@
+Flask
+flask-cors
+deep-translator
+pytest

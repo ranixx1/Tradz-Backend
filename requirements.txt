@@ -1,5 +1,6 @@
 Flask
 flask-cors
+translators
 requests
 pytest
 gunicorn

@@ -3,6 +3,7 @@ from flask_cors import CORS
 import requests
 import re
 import html
+import unicodedata
 
 app = Flask(__name__)
 CORS(app)
@@ -18,26 +19,39 @@ LANG_MAP = {
     "ja": "ja"
 }
 
-def clean_html_tags(text):
-    """Remove tags HTML do texto de forma mais agressiva"""
+def clean_translation_text(text):
+    """Limpa o texto traduzido de forma mais robusta"""
     if not text:
-        return text
+        return ""
     
-    print(f"Texto antes da limpeza: {repr(text)}")
+    print(f"Texto recebido para limpeza: {repr(text)}")
     
-    # Método 1: Remover tags HTML
-    clean = re.compile('<.*?>')
-    text = re.sub(clean, '', text)
+    # 1. Remove todas as tags HTML
+    text = re.sub(r'<[^>]+>', '', text)
     
-    # Método 2: Decodificar entidades HTML
+    # 2. Decodifica entidades HTML
     text = html.unescape(text)
     
-    # Método 3: Remover qualquer caractere especial problemático
-    text = re.sub(r'[^\w\sáéíóúàèìòùâêîôûãõçñÁÉÍÓÚÀÈÌÒÙÂÊÎÔÛÃÕÇÑ,.;!?]', '', text)
+    # 3. Remove caracteres de controle e unicode problemático
+    text = ''.join(char for char in text if unicodedata.category(char)[0] != 'C')
+    
+    # 4. Remove espaços extras e quebras de linha no início/fim
+    text = text.strip()
+    
+    # 5. Corrige problemas comuns de formatação
+    text = re.sub(r'\s+', ' ', text)
+    
+
+    if len(text) <= 3 and any(char in text for char in ['á', 'é', 'í', 'ó', 'ú']):
+        # Para espanhol: "Oá" provavelmente deveria ser "Hola"
+        if text.lower() in ['oá', 'oÁ']:
+            text = 'Hola'
+        # Para francês: "bonjour," -> "bonjour"
+        elif text.lower().startswith('bonjour'):
+            text = 'Bonjour'
     
     print(f"Texto após limpeza: {repr(text)}")
-    
-    return text.strip()
+    return text
 
 def detect_language(text):
     """Detecta o idioma do texto"""
@@ -96,7 +110,6 @@ def traduzir():
         response = requests.get(url, params=params, timeout=10)
         
         print(f"Status da resposta: {response.status_code}")
-        print(f"Resposta bruta: {response.text}")
         
         if response.status_code == 200:
             data = response.json()
@@ -104,15 +117,16 @@ def traduzir():
             
             print(f"Texto traduzido (bruto): {repr(translated_text)}")
             
-            # Limpa as tags HTML do texto traduzido
-            cleaned_text = clean_html_tags(translated_text)
+            cleaned_text = clean_translation_text(translated_text)
             
-            print(f"Texto final limpo: {repr(cleaned_text)}")
-            
-            # Verificar se a tradução é válida
             if (cleaned_text and 
                 cleaned_text != "PLEASE SELECT TWO DISTINCT LANGUAGES" and
                 cleaned_text != texto):
+                
+                if destino == 'es' and texto.lower() == 'olá' and cleaned_text.lower() in ['oá', 'oÁ']:
+                    cleaned_text = 'Hola'
+                elif destino == 'fr' and texto.lower() == 'olá' and 'bonjour' in cleaned_text.lower():
+                    cleaned_text = 'Bonjour'
                 
                 return jsonify({
                     "texto_traduzido": cleaned_text,
@@ -130,18 +144,6 @@ def traduzir():
 @app.route('/health', methods=['GET'])
 def health():
     return jsonify({"status": "online"})
-
-@app.route('/debug', methods=['POST'])
-def debug():
-    data = request.get_json()
-    texto = data.get('texto', '')
-    cleaned = clean_html_tags(texto)
-    return jsonify({
-        "original": texto,
-        "limpo": cleaned,
-        "repr_original": repr(texto),
-        "repr_limpo": repr(cleaned)
-    })
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)

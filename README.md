@@ -26,6 +26,7 @@ Ele foi projetado para funcionar com um front-end (como o [seu projeto React](ht
     ```sh
     pip install -r requirements.txt
     ```
+    *(Isso instalará o `Flask`, `pytest` e outras ferramentas necessárias.)*
 
 4.  **Inicie o servidor**:
     ```sh
@@ -33,6 +34,24 @@ Ele foi projetado para funcionar com um front-end (como o [seu projeto React](ht
     ```
 
 O servidor estará rodando em `http://127.0.0.1:5000`.
+
+## Como Testar
+
+Este projeto usa `pytest` para testes automatizados para garantir que a API funcione como esperado.
+
+1.  Certifique-se de que você já instalou as dependências (passo 3 da seção "Como Rodar").
+
+2.  Na pasta raiz do projeto (`Tradz-Backend`), execute o comando:
+    ```sh
+    pytest
+    ```
+
+3.  O `pytest` irá descobrir automaticamente o arquivo `pytest.ini`, encontrar a pasta `test/`, executar todos os testes e mostrar um relatório.
+
+4.  Se tudo estiver correto, você verá uma mensagem de sucesso:
+    ```sh
+    ================== 5 passed in X.XXs ==================
+    ```
 
 ## API
 

@@ -1,11 +1,12 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import requests
+import re
+import html
 
 app = Flask(__name__)
 CORS(app)
 
-# Mapeamento de idiomas para MyMemory API
 LANG_MAP = {
     "pt": "pt-BR",
     "en": "en",
@@ -16,8 +17,20 @@ LANG_MAP = {
     "ja": "ja"
 }
 
+def clean_html_tags(text):
+    if not text:
+        return text
+    
+    # Remove tags HTML
+    clean = re.compile('<.*?>')
+    text = re.sub(clean, '', text)
+    
+    # Decodifica entidades HTML (como &amp;, &lt;, etc.)
+    text = html.unescape(text)
+    
+    return text.strip()
+
 def detect_language(text):
-    """Detecta o idioma do texto"""
     if not text or len(text.strip()) < 2:
         return "en"
     
@@ -53,15 +66,12 @@ def traduzir():
         if not texto:
             return jsonify({"erro": "Texto é obrigatório"}), 400
 
-        # Se origem for 'auto', detectar o idioma
         if origem == 'auto':
             origem = detect_language(texto)
 
-        # Mapear códigos de idioma para MyMemory
         source_lang = LANG_MAP.get(origem, origem)
         target_lang = LANG_MAP.get(destino, destino)
 
-        # MyMemory API
         url = "https://api.mymemory.translated.net/get"
         params = {
             "q": texto,
@@ -74,7 +84,11 @@ def traduzir():
             data = response.json()
             translated_text = data.get("responseData", {}).get("translatedText", "")
             
-            # Verificar se a tradução é válida
+            translated_text = clean_html_tags(translated_text)
+            
+            print(f"Texto original: {texto}")
+            print(f"Texto traduzido (limpo): {translated_text}")
+            
             if (translated_text and 
                 translated_text != "PLEASE SELECT TWO DISTINCT LANGUAGES" and
                 translated_text != texto):
@@ -89,6 +103,7 @@ def traduzir():
             return jsonify({"erro": "Erro na API de tradução"}), 500
 
     except Exception as e:
+        print("Erro na tradução:", e)
         return jsonify({"erro": "Erro interno no servidor"}), 500
 
 @app.route('/health', methods=['GET'])

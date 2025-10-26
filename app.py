@@ -44,7 +44,7 @@ def clean_translation_text(text):
 
     if len(text) <= 3 and any(char in text for char in ['á', 'é', 'í', 'ó', 'ú']):
         # Para espanhol: "Oá" provavelmente deveria ser "Hola"
-        if text.lower() in ['oá', 'oÁ']:
+        if text.lower() in ['oá', 'Oá']:
             text = 'Hola'
         # Para francês: "bonjour," -> "bonjour"
         elif text.lower().startswith('bonjour'):

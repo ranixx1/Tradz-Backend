@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: tradutor-backend
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn app:app"
+    envVars:
+      - key: FRONTEND_URL
+        value: "hhttps://tradz-front-project.vercel.app"

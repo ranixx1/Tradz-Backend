@@ -1,0 +1,43 @@
+#Ambientes Virtuais
+venv/
+.venv/
+ENV/
+env/
+*.env
+
+#Cache do Python
+
+pycache/
+*.pyc
+*.pyo
+*.pyd
+
+#Cache do Pytest
+
+.pytest_cache/
+
+#Relatórios de testes e cobertura
+
+.cache/
+.coverage
+htmlcov/
+
+#Logs e bancos de dados locais
+
+*.log
+*.sqlite3
+
+#Pasta de build/distribuição
+
+build/
+dist/
+*.egg-info/
+
+#Arquivos do S.O. (macOS e Windows)
+
+.DS_Store
+Thumbs.db
+
+#Configurações de IDE 
+
+.vscode/

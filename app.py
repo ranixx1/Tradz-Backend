@@ -2,10 +2,15 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from deep_translator import GoogleTranslator
 import logging
+import os
 
 app = Flask(__name__)
-CORS(app)
+frontend_url = os.environ.get('FRONTEND_URL', 'http://localhost:5173')
+origins = [
+    frontend_url
+]
 
+CORS(app, origins=origins)
 logging.basicConfig(level=logging.DEBUG)
 
 @app.route('/traduzir', methods=['POST'])

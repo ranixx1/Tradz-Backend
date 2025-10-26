@@ -8,4 +8,4 @@ services:
     startCommand: "gunicorn app:app"
     envVars:
       - key: FRONTEND_URL
-        value: "hhttps://tradz-front-project.vercel.app"
+        value: "https://tradz-front-project.vercel.app"

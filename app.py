@@ -7,6 +7,7 @@ import html
 app = Flask(__name__)
 CORS(app)
 
+# Mapeamento de idiomas para MyMemory API
 LANG_MAP = {
     "pt": "pt-BR",
     "en": "en",
@@ -18,19 +19,28 @@ LANG_MAP = {
 }
 
 def clean_html_tags(text):
+    """Remove tags HTML do texto de forma mais agressiva"""
     if not text:
         return text
     
-    # Remove tags HTML
+    print(f"Texto antes da limpeza: {repr(text)}")
+    
+    # Método 1: Remover tags HTML
     clean = re.compile('<.*?>')
     text = re.sub(clean, '', text)
     
-    # Decodifica entidades HTML (como &amp;, &lt;, etc.)
+    # Método 2: Decodificar entidades HTML
     text = html.unescape(text)
+    
+    # Método 3: Remover qualquer caractere especial problemático
+    text = re.sub(r'[^\w\sáéíóúàèìòùâêîôûãõçñÁÉÍÓÚÀÈÌÒÙÂÊÎÔÛÃÕÇÑ,.;!?]', '', text)
+    
+    print(f"Texto após limpeza: {repr(text)}")
     
     return text.strip()
 
 def detect_language(text):
+    """Detecta o idioma do texto"""
     if not text or len(text.strip()) < 2:
         return "en"
     
@@ -63,39 +73,50 @@ def traduzir():
         origem = data.get('origem', 'auto')
         destino = data.get('destino', 'en')
 
+        print(f"Recebido: texto='{texto}', origem='{origem}', destino='{destino}'")
+
         if not texto:
             return jsonify({"erro": "Texto é obrigatório"}), 400
 
         if origem == 'auto':
             origem = detect_language(texto)
+            print(f"Idioma detectado: {origem}")
 
         source_lang = LANG_MAP.get(origem, origem)
         target_lang = LANG_MAP.get(destino, destino)
 
+        # MyMemory API
         url = "https://api.mymemory.translated.net/get"
         params = {
             "q": texto,
             "langpair": f"{source_lang}|{target_lang}"
         }
         
+        print(f"Fazendo requisição para MyMemory: {params}")
         response = requests.get(url, params=params, timeout=10)
+        
+        print(f"Status da resposta: {response.status_code}")
+        print(f"Resposta bruta: {response.text}")
         
         if response.status_code == 200:
             data = response.json()
             translated_text = data.get("responseData", {}).get("translatedText", "")
             
-            translated_text = clean_html_tags(translated_text)
+            print(f"Texto traduzido (bruto): {repr(translated_text)}")
             
-            print(f"Texto original: {texto}")
-            print(f"Texto traduzido (limpo): {translated_text}")
+            # Limpa as tags HTML do texto traduzido
+            cleaned_text = clean_html_tags(translated_text)
             
-            if (translated_text and 
-                translated_text != "PLEASE SELECT TWO DISTINCT LANGUAGES" and
-                translated_text != texto):
+            print(f"Texto final limpo: {repr(cleaned_text)}")
+            
+            # Verificar se a tradução é válida
+            if (cleaned_text and 
+                cleaned_text != "PLEASE SELECT TWO DISTINCT LANGUAGES" and
+                cleaned_text != texto):
                 
                 return jsonify({
-                    "texto_traduzido": translated_text,
-                    "traduzido": translated_text
+                    "texto_traduzido": cleaned_text,
+                    "traduzido": cleaned_text
                 })
             else:
                 return jsonify({"erro": "Não foi possível traduzir o texto"}), 400
@@ -109,6 +130,18 @@ def traduzir():
 @app.route('/health', methods=['GET'])
 def health():
     return jsonify({"status": "online"})
+
+@app.route('/debug', methods=['POST'])
+def debug():
+    data = request.get_json()
+    texto = data.get('texto', '')
+    cleaned = clean_html_tags(texto)
+    return jsonify({
+        "original": texto,
+        "limpo": cleaned,
+        "repr_original": repr(texto),
+        "repr_limpo": repr(cleaned)
+    })
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
